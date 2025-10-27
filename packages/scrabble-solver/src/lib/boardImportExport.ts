@@ -8,8 +8,9 @@ import { EMPTY_CELL } from '@scrabble-solver/constants';
  * Line 2: Game type (e.g., GAME: scrabble)
  * Line 3: Locale (e.g., LOCALE: en-US)
  * Line 4: Board dimensions (e.g., SIZE: 15x15)
- * Line 5: Blank separator (---)
- * Lines 6+: Board rows (one per line)
+ * Line 5: Rack tiles (e.g., RACK: ABCDefg - lowercase for blanks)
+ * Line 6: Blank separator (---)
+ * Lines 7+: Board rows (one per line)
  *   - Regular tiles: uppercase letter
  *   - Blank tiles: lowercase letter (indicates the character the blank represents)
  *   - Empty cells: space character
@@ -20,6 +21,7 @@ import { EMPTY_CELL } from '@scrabble-solver/constants';
  * GAME: scrabble
  * LOCALE: en-US
  * SIZE: 15x15
+ * RACK: ABCDefg
  * ---
  *                
  *       CAT      
@@ -33,12 +35,14 @@ export interface BoardExportData {
   game: Game;
   locale: Locale;
   board: Board;
+  rack?: string[];
 }
 
 export interface BoardImportResult {
   game: Game;
   locale: Locale;
   board: Board;
+  rack: string[];
   warnings: string[];
 }
 
@@ -49,7 +53,7 @@ const SEPARATOR = '---';
 /**
  * Exports a board to a text format
  */
-export const exportBoardToText = ({ game, locale, board }: BoardExportData): string => {
+export const exportBoardToText = ({ game, locale, board, rack = [] }: BoardExportData): string => {
   const lines: string[] = [];
   
   // Header
@@ -57,6 +61,11 @@ export const exportBoardToText = ({ game, locale, board }: BoardExportData): str
   lines.push(`GAME: ${game}`);
   lines.push(`LOCALE: ${locale}`);
   lines.push(`SIZE: ${board.columnsCount}x${board.rowsCount}`);
+  
+  // Rack (convert blanks to lowercase)
+  const rackString = rack.map(tile => tile || ' ').join('');
+  lines.push(`RACK: ${rackString}`);
+  
   lines.push(SEPARATOR);
   
   // Board content
@@ -126,6 +135,18 @@ export const importBoardFromText = (text: string): BoardImportResult => {
   const expectedWidth = parseInt(sizeMatch[1], 10);
   const expectedHeight = parseInt(sizeMatch[2], 10);
   
+  // Parse rack (optional for backwards compatibility)
+  let rack: string[] = [];
+  const rackLine = lines[lineIndex]?.trim();
+  if (rackLine?.startsWith('RACK:')) {
+    lineIndex++;
+    const rackString = rackLine.substring(5).trim();
+    rack = rackString.split('').map(char => {
+      if (char === ' ') return '';
+      return char;
+    });
+  }
+  
   // Skip separator
   const separatorLine = lines[lineIndex++]?.trim();
   if (separatorLine !== SEPARATOR) {
@@ -192,6 +213,7 @@ export const importBoardFromText = (text: string): BoardImportResult => {
     game,
     locale,
     board,
+    rack,
     warnings,
   };
 };

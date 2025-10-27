@@ -2,7 +2,7 @@ import classNames from 'classnames';
 import { type FunctionComponent, memo } from 'react';
 
 import { useAppLayout } from 'hooks';
-import { CardChecklist, Cog, Eraser, Github, KeyboardFill, List, Sack } from 'icons';
+import { CardChecklist, Cog, Download, Eraser, Github, KeyboardFill, List, Sack, Upload } from 'icons';
 import { GITHUB_PROJECT_URL } from 'parameters';
 import { selectConfig, useTranslate, useTypedSelector } from 'state';
 
@@ -13,6 +13,8 @@ import { selectHasInvalidWords, selectHasOverusedTiles } from './selectors';
 
 interface Props {
   onClear: () => void;
+  onExport: () => void;
+  onImport: () => void;
   onShowKeyMap: () => void;
   onShowMenu: () => void;
   onShowRemainingTiles: () => void;
@@ -22,6 +24,8 @@ interface Props {
 
 const NavButtonsBase: FunctionComponent<Props> = ({
   onClear,
+  onExport,
+  onImport,
   onShowKeyMap,
   onShowMenu,
   onShowRemainingTiles,
@@ -111,6 +115,26 @@ const NavButtonsBase: FunctionComponent<Props> = ({
           rel="noopener noreferrer"
           target="_blank"
           tooltip={translate('github')}
+        />
+      </div>
+
+      <div className={styles.separator} />
+
+      <div className={styles.group}>
+        <IconButton
+          aria-label="Export board"
+          className={styles.button}
+          Icon={Download}
+          tooltip="Export board"
+          onClick={onExport}
+        />
+
+        <IconButton
+          aria-label="Import board"
+          className={styles.button}
+          Icon={Upload}
+          tooltip="Import board"
+          onClick={onImport}
         />
       </div>
 

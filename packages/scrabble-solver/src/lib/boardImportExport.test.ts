@@ -24,8 +24,9 @@ describe('boardImportExport', () => {
       expect(lines[1]).toBe('GAME: scrabble');
       expect(lines[2]).toBe('LOCALE: en-US');
       expect(lines[3]).toBe('SIZE: 15x15');
-      expect(lines[4]).toBe('---');
-      expect(lines[5]).toBe('               '); // 15 spaces
+      expect(lines[4]).toBe('RACK: ');
+      expect(lines[5]).toBe('---');
+      expect(lines[6]).toBe('               '); // 15 spaces
       expect(lines[lines.length - 1]).toBe('---');
     });
 
@@ -51,11 +52,12 @@ describe('boardImportExport', () => {
       expect(lines[1]).toBe('GAME: scrabble');
       expect(lines[2]).toBe('LOCALE: en-US');
       expect(lines[3]).toBe('SIZE: 5x5');
-      expect(lines[5]).toBe('     ');
-      expect(lines[6]).toBe(' CAT ');
-      expect(lines[7]).toBe(' A   ');
-      expect(lines[8]).toBe(' R   ');
-      expect(lines[9]).toBe('     ');
+      expect(lines[4]).toBe('RACK: ');
+      expect(lines[6]).toBe('     ');
+      expect(lines[7]).toBe(' CAT ');
+      expect(lines[8]).toBe(' A   ');
+      expect(lines[9]).toBe(' R   ');
+      expect(lines[10]).toBe('     ');
     });
 
     it('exports blank tiles as lowercase', () => {
@@ -72,7 +74,7 @@ describe('boardImportExport', () => {
       const text = exportBoardToText(data);
       const lines = text.split('\n');
 
-      expect(lines[5]).toBe('CaT'); // 'a' is lowercase because it's a blank
+      expect(lines[6]).toBe('CaT'); // 'a' is lowercase because it's a blank
     });
 
     it('exports different game types correctly', () => {
@@ -98,6 +100,7 @@ describe('boardImportExport', () => {
 GAME: scrabble
 LOCALE: en-US
 SIZE: 5x5
+RACK: 
 ---
      
      
@@ -113,6 +116,7 @@ SIZE: 5x5
       expect(result.board.columnsCount).toBe(5);
       expect(result.board.rowsCount).toBe(5);
       expect(result.board.isEmpty()).toBe(true);
+      expect(result.rack).toEqual([]);
       expect(result.warnings).toHaveLength(0);
     });
 
@@ -121,6 +125,7 @@ SIZE: 5x5
 GAME: scrabble
 LOCALE: en-US
 SIZE: 5x5
+RACK: ABCDEFG
 ---
      
  CAT 
@@ -137,6 +142,7 @@ SIZE: 5x5
       expect(result.board.rows[2][1].tile.character).toBe('A');
       expect(result.board.rows[3][1].tile.character).toBe('R');
       expect(result.board.rows[0][0].isEmpty).toBe(true);
+      expect(result.rack).toEqual(['A', 'B', 'C', 'D', 'E', 'F', 'G']);
     });
 
     it('imports blank tiles correctly', () => {
@@ -144,6 +150,7 @@ SIZE: 5x5
 GAME: scrabble
 LOCALE: en-US
 SIZE: 3x1
+RACK: ABc
 ---
 CaT
 ---`;
@@ -156,6 +163,8 @@ CaT
       expect(result.board.rows[0][1].tile.isBlank).toBe(true);
       expect(result.board.rows[0][2].tile.character).toBe('T');
       expect(result.board.rows[0][2].tile.isBlank).toBe(false);
+      expect(result.rack).toEqual(['A', 'B', 'c']);
+      expect(result.rack[2]).toBe('c'); // lowercase indicates blank in rack
     });
 
     it('pads short rows with spaces', () => {
@@ -163,6 +172,7 @@ CaT
 GAME: scrabble
 LOCALE: en-US
 SIZE: 5x2
+RACK: 
 ---
 CAT
 DOG
@@ -181,6 +191,7 @@ DOG
 GAME: scrabble
 LOCALE: en-US
 SIZE: 3x1
+RACK: 
 ---
 TOOLONG
 ---`;
@@ -258,6 +269,7 @@ SIZE: 5x5
 GAME: scrabble
 LOCALE: en-US
 SIZE: 5x5
+RACK: 
 ---
      
      
@@ -288,6 +300,7 @@ SIZE: 5x5
         game: Game.Scrabble,
         locale: Locale.EN_US,
         board: originalBoard,
+        rack: ['A', 'B', 'c', 'D', 'E', 'F', 'G'],
       };
 
       const text = exportBoardToText(data);
@@ -297,6 +310,7 @@ SIZE: 5x5
       expect(result.locale).toBe(data.locale);
       expect(result.board.equals(originalBoard)).toBe(true);
       expect(result.board.rows[1][8].tile.isBlank).toBe(true);
+      expect(result.rack).toEqual(['A', 'B', 'c', 'D', 'E', 'F', 'G']);
     });
   });
 
@@ -306,6 +320,7 @@ SIZE: 5x5
 GAME: scrabble
 LOCALE: en-US
 SIZE: 5x5
+RACK: 
 ---
      
 ---`;

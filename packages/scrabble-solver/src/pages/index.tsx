@@ -1,13 +1,14 @@
 import { isObject } from '@scrabble-solver/types';
 import fs from 'fs';
 import path from 'path';
-import { type FunctionComponent, useState } from 'react';
+import { type ChangeEvent, type FunctionComponent, useRef, useState } from 'react';
 import ReactModal from 'react-modal';
 import { useDispatch } from 'react-redux';
 
 import { Logo, NavButtons, Solver } from 'components';
 import { useDirection, useEffectOnce, useLanguage, useLocalStorage } from 'hooks';
 import { LOCALE_FEATURES } from 'i18n';
+import { downloadBoardAsFile, readBoardFromFile } from '../lib/boardImportExport';
 import {
   DictionaryModal,
   KeyMapModal,
@@ -18,7 +19,18 @@ import {
   WordsModal,
 } from 'modals';
 import { registerServiceWorker } from 'serviceWorkerManager';
-import { initialize, reset, selectConfig, selectLocale, useTypedSelector } from 'state';
+import {
+  boardSlice,
+  initialize,
+  rackSlice,
+  reset,
+  selectBoard,
+  selectConfig,
+  selectGame,
+  selectLocale,
+  selectRack,
+  useTypedSelector,
+} from 'state';
 
 import styles from './index.module.scss';
 
@@ -34,6 +46,10 @@ const Index: FunctionComponent<Props> = ({ version }) => {
   const dispatch = useDispatch();
   const config = useTypedSelector(selectConfig);
   const locale = useTypedSelector(selectLocale);
+  const game = useTypedSelector(selectGame);
+  const board = useTypedSelector(selectBoard);
+  const rack = useTypedSelector(selectRack);
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const [isClient, setIsClient] = useState(false);
   const [modals, setModals] = useState<Record<Modal, boolean>>({
     dictionary: false,
@@ -53,6 +69,61 @@ const Index: FunctionComponent<Props> = ({ version }) => {
   useLanguage(locale);
   useLocalStorage();
 
+  const handleExport = () => {
+    try {
+      downloadBoardAsFile(
+        {
+          game,
+          locale,
+          board,
+          rack: rack.map((tile) => tile || ''),
+        },
+        `scrabble-board-${game}-${new Date().toISOString().split('T')[0]}.txt`,
+      );
+    } catch (error) {
+      console.error('Failed to export board:', error);
+      alert('Failed to export board. Please try again.');
+    }
+  };
+
+  const handleImport = () => {
+    fileInputRef.current?.click();
+  };
+
+  const handleFileChange = async (event: ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    try {
+      const result = await readBoardFromFile(file);
+      
+      // Show warnings if any
+      if (result.warnings.length > 0) {
+        console.warn('Import warnings:', result.warnings);
+      }
+
+      // Update board and rack
+      dispatch(boardSlice.actions.change(result.board));
+      dispatch(rackSlice.actions.init(result.rack));
+
+      // Note: game and locale are not changed automatically
+      // User can change them via settings if needed
+      if (result.game !== game || result.locale !== locale) {
+        alert(
+          `Note: This board was saved with game "${result.game}" and locale "${result.locale}". ` +
+            `Your current settings are "${game}" and "${locale}". ` +
+            `You may want to adjust your settings to match.`,
+        );
+      }
+    } catch (error) {
+      console.error('Failed to import board:', error);
+      alert(`Failed to import board: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    }
+
+    // Reset file input
+    event.target.value = '';
+  };
+
   useEffectOnce(() => {
     if (process.env.NODE_ENV === 'production') {
       // eslint-disable-next-line @typescript-eslint/no-floating-promises
@@ -69,6 +140,14 @@ const Index: FunctionComponent<Props> = ({ version }) => {
 
   return (
     <>
+      <input
+        ref={fileInputRef}
+        type="file"
+        accept=".txt"
+        style={{ display: 'none' }}
+        onChange={handleFileChange}
+      />
+
       <nav className={styles.nav}>
         <div className={styles.navContent}>
           <div className={styles.navLogo}>
@@ -79,6 +158,8 @@ const Index: FunctionComponent<Props> = ({ version }) => {
 
           <NavButtons
             onClear={() => dispatch(reset())}
+            onExport={handleExport}
+            onImport={handleImport}
             onShowKeyMap={() => patchModals({ keyMap: true })}
             onShowMenu={() => patchModals({ menu: true })}
             onShowRemainingTiles={() => patchModals({ remainingTiles: true })}
