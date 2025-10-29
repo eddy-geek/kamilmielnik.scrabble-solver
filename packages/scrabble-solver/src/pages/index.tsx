@@ -103,11 +103,11 @@ const Index: FunctionComponent<Props> = ({ version }) => {
         console.warn('Import warnings:', result.warnings);
       }
 
-      // Update board and rack
-      dispatch(boardSlice.actions.change(result.board));
-      dispatch(rackSlice.actions.init(result.rack));
-
-      // Automatically switch game and locale to match imported board
+      // CRITICAL: Change game/locale BEFORE updating board
+      // This ensures:
+      // 1. Board dimensions are adjusted (if needed) by changeGame extraReducer
+      // 2. Config is correct when board tiles are validated
+      // 3. Tiles are recognized as valid for the imported game
       let settingsChanged = false;
       if (result.game !== game) {
         dispatch(settingsSlice.actions.changeGame(result.game));
@@ -117,6 +117,10 @@ const Index: FunctionComponent<Props> = ({ version }) => {
         dispatch(settingsSlice.actions.changeLocale(result.locale));
         settingsChanged = true;
       }
+
+      // Now update board and rack - config is already correct
+      dispatch(boardSlice.actions.change(result.board));
+      dispatch(rackSlice.actions.init(result.rack));
 
       if (settingsChanged) {
         alert(
