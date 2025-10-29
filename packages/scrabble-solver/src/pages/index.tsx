@@ -29,6 +29,7 @@ import {
   selectGame,
   selectLocale,
   selectRack,
+  settingsSlice,
   useTypedSelector,
 } from 'state';
 
@@ -106,13 +107,23 @@ const Index: FunctionComponent<Props> = ({ version }) => {
       dispatch(boardSlice.actions.change(result.board));
       dispatch(rackSlice.actions.init(result.rack));
 
-      // Note: game and locale are not changed automatically
-      // User can change them via settings if needed
-      if (result.game !== game || result.locale !== locale) {
+      // Automatically switch game and locale to match imported board
+      let settingsChanged = false;
+      if (result.game !== game) {
+        dispatch(settingsSlice.actions.changeGame(result.game));
+        settingsChanged = true;
+      }
+      if (result.locale !== locale) {
+        dispatch(settingsSlice.actions.changeLocale(result.locale));
+        settingsChanged = true;
+      }
+
+      if (settingsChanged) {
         alert(
-          `Note: This board was saved with game "${result.game}" and locale "${result.locale}". ` +
-            `Your current settings are "${game}" and "${locale}". ` +
-            `You may want to adjust your settings to match.`,
+          `Board imported successfully!\n\n` +
+            `Game and locale have been automatically set to:\n` +
+            `Game: ${result.game}\n` +
+            `Locale: ${result.locale}`,
         );
       }
     } catch (error) {
