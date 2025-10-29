@@ -12,9 +12,10 @@ import { Board, type BoardJson, type Game, type Locale } from '@scrabble-solver/
  * Line 5: Rack tiles (e.g., RACK: ABCDefg - lowercase for blanks)
  * Line 6: Blank separator (---)
  * Lines 7+: Board rows (one per line)
- *   - Regular tiles: uppercase letter
+ *   - Regular tiles: uppercase letter (converted to lowercase on import)
  *   - Blank tiles: lowercase letter (indicates the character the blank represents)
  *   - Empty cells: dot (.)
+ *   - Note: All tiles are stored as lowercase internally
  * After board: Board definition section
  *   - BOARD_DEF header
  *   - One line per row showing bonus squares
@@ -92,10 +93,11 @@ export const exportBoardToText = ({ game, locale, board, rack = [] }: BoardExpor
         if (cell.isEmpty) {
           return '.';
         }
-        // Lowercase for blank tiles, uppercase for regular tiles
+        // File format: uppercase for regular tiles, lowercase for blanks (human-readable)
+        // But tiles are stored as lowercase internally, so we uppercase non-blanks for export
         return cell.tile.isBlank 
-          ? cell.tile.character.toLowerCase() 
-          : cell.tile.character.toUpperCase();
+          ? cell.tile.character  // Keep lowercase for blanks
+          : cell.tile.character.toUpperCase();  // Uppercase for regular tiles
       })
       .join('');
     lines.push(rowString);
@@ -264,7 +266,8 @@ export const importBoardFromText = (text: string): BoardImportResult => {
     row.split('').map((char, x) => {
       const isEmpty = !char || char === '.' || char === ' ';
       const isBlank = !isEmpty && char === char.toLowerCase() && char !== char.toUpperCase();
-      const character = isEmpty ? ' ' : char.toUpperCase();
+      // IMPORTANT: Use lowercase to match config.tiles and normal tile entry
+      const character = isEmpty ? ' ' : char.toLowerCase();
       
       return {
         isEmpty,
