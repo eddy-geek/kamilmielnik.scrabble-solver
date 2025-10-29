@@ -26,7 +26,7 @@ describe('boardImportExport', () => {
       expect(lines[3]).toBe('SIZE: 15x15');
       expect(lines[4]).toBe('RACK: ');
       expect(lines[5]).toBe('---');
-      expect(lines[6]).toBe('               '); // 15 spaces
+      expect(lines[6]).toBe('...............'); // 15 dots
       expect(lines[lines.length - 1]).toBe('---');
     });
 
@@ -53,11 +53,11 @@ describe('boardImportExport', () => {
       expect(lines[2]).toBe('LOCALE: en-US');
       expect(lines[3]).toBe('SIZE: 5x5');
       expect(lines[4]).toBe('RACK: ');
-      expect(lines[6]).toBe('     ');
-      expect(lines[7]).toBe(' CAT ');
-      expect(lines[8]).toBe(' A   ');
-      expect(lines[9]).toBe(' R   ');
-      expect(lines[10]).toBe('     ');
+      expect(lines[6]).toBe('.....');
+      expect(lines[7]).toBe('.CAT.');
+      expect(lines[8]).toBe('.A...');
+      expect(lines[9]).toBe('.R...');
+      expect(lines[10]).toBe('.....');
     });
 
     it('exports blank tiles as lowercase', () => {
@@ -102,11 +102,11 @@ LOCALE: en-US
 SIZE: 5x5
 RACK: 
 ---
-     
-     
-     
-     
-     
+.....
+.....
+.....
+.....
+.....
 ---`;
 
       const result = importBoardFromText(text);
@@ -127,11 +127,11 @@ LOCALE: en-US
 SIZE: 5x5
 RACK: ABCDEFG
 ---
-     
- CAT 
- A   
- R   
-     
+.....
+.CAT.
+.A...
+.R...
+.....
 ---`;
 
       const result = importBoardFromText(text);
@@ -271,11 +271,11 @@ LOCALE: en-US
 SIZE: 5x5
 RACK: 
 ---
-     
-     
-     
-     
-     
+.....
+.....
+.....
+.....
+.....
 ---`;
 
       const result = importBoardFromText(text);
@@ -322,7 +322,7 @@ LOCALE: en-US
 SIZE: 5x5
 RACK: 
 ---
-     
+.....
 ---`;
 
       expect(isValidBoardExport(text)).toBe(true);

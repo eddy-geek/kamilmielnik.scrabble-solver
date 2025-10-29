@@ -1,5 +1,6 @@
+import { getConfig } from '@scrabble-solver/configs';
+import { BONUS_CHARACTER, BONUS_WORD } from '@scrabble-solver/constants';
 import { Board, type BoardJson, type Game, type Locale } from '@scrabble-solver/types';
-import { EMPTY_CELL } from '@scrabble-solver/constants';
 
 /**
  * Format specification for board import/export:
@@ -13,7 +14,13 @@ import { EMPTY_CELL } from '@scrabble-solver/constants';
  * Lines 7+: Board rows (one per line)
  *   - Regular tiles: uppercase letter
  *   - Blank tiles: lowercase letter (indicates the character the blank represents)
- *   - Empty cells: space character
+ *   - Empty cells: dot (.)
+ * After board: Board definition section
+ *   - BOARD_DEF header
+ *   - One line per row showing bonus squares
+ *   - . = empty, D = double word, T = triple word, Q = quadruple word
+ *   - d = double letter, t = triple letter, q = quadruple letter
+ *   - X = center star
  * Last line: Optional blank separator (---)
  * 
  * Example:
@@ -23,11 +30,21 @@ import { EMPTY_CELL } from '@scrabble-solver/constants';
  * SIZE: 15x15
  * RACK: ABCDefg
  * ---
- *                
- *       CAT      
- *       A        
- *       R        
- *                
+ * ...............
+ * .......CAT.....
+ * .......A.......
+ * .......R.......
+ * ...............
+ * ---
+ * BOARD_DEF
+ * T..d...T...d..T
+ * .D...t...t...D.
+ * ..D...d.d...D..
+ * d..D...d...D..d
+ * ....D.....D....
+ * .t...t...t...t.
+ * ..d...d.d...d..
+ * T..d...X...d..T
  * ---
  */
 
@@ -73,7 +90,7 @@ export const exportBoardToText = ({ game, locale, board, rack = [] }: BoardExpor
     const rowString = row
       .map((cell) => {
         if (cell.isEmpty) {
-          return EMPTY_CELL;
+          return '.';
         }
         // Lowercase for blank tiles, uppercase for regular tiles
         return cell.tile.isBlank 
@@ -82,6 +99,52 @@ export const exportBoardToText = ({ game, locale, board, rack = [] }: BoardExpor
       })
       .join('');
     lines.push(rowString);
+  }
+  
+  lines.push(SEPARATOR);
+  
+  // Board definition (bonus squares)
+  lines.push('BOARD_DEF');
+  const config = getConfig(game, locale);
+  const bonusMap = new Map<string, { multiplier: number; type: string }>();
+  
+  for (const bonus of config.bonuses) {
+    bonusMap.set(`${bonus.x},${bonus.y}`, { multiplier: bonus.multiplier, type: bonus.type });
+  }
+  
+  const centerX = Math.floor(board.columnsCount / 2);
+  const centerY = Math.floor(board.rowsCount / 2);
+  
+  for (let y = 0; y < board.rowsCount; y++) {
+    let rowDef = '';
+    for (let x = 0; x < board.columnsCount; x++) {
+      // Check if this is the center
+      if (x === centerX && y === centerY) {
+        rowDef += 'X';
+        continue;
+      }
+      
+      const bonus = bonusMap.get(`${x},${y}`);
+      if (!bonus) {
+        rowDef += '.';
+        continue;
+      }
+      
+      if (bonus.type === BONUS_WORD) {
+        if (bonus.multiplier === 2) rowDef += 'D';
+        else if (bonus.multiplier === 3) rowDef += 'T';
+        else if (bonus.multiplier === 4) rowDef += 'Q';
+        else rowDef += '.';
+      } else if (bonus.type === BONUS_CHARACTER) {
+        if (bonus.multiplier === 2) rowDef += 'd';
+        else if (bonus.multiplier === 3) rowDef += 't';
+        else if (bonus.multiplier === 4) rowDef += 'q';
+        else rowDef += '.';
+      } else {
+        rowDef += '.';
+      }
+    }
+    lines.push(rowDef);
   }
   
   lines.push(SEPARATOR);
@@ -160,6 +223,16 @@ export const importBoardFromText = (text: string): BoardImportResult => {
     if (line?.trim() === SEPARATOR) {
       break;
     }
+    if (line?.trim() === 'BOARD_DEF') {
+      // Skip board definition section
+      while (lineIndex < lines.length) {
+        const defLine = lines[lineIndex++];
+        if (defLine?.trim() === SEPARATOR) {
+          break;
+        }
+      }
+      break;
+    }
     if (line !== undefined) {
       boardRows.push(line);
     }
@@ -179,9 +252,9 @@ export const importBoardFromText = (text: string): BoardImportResult => {
       return row.substring(0, expectedWidth);
     }
     if (row.length < expectedWidth) {
-      // Pad with spaces
-      warnings.push(`Row ${rowIndex + 1} is too short (${row.length} < ${expectedWidth}), padding with spaces`);
-      return row + EMPTY_CELL.repeat(expectedWidth - row.length);
+      // Pad with dots
+      warnings.push(`Row ${rowIndex + 1} is too short (${row.length} < ${expectedWidth}), padding with dots`);
+      return row + '.'.repeat(expectedWidth - row.length);
     }
     return row;
   });
@@ -189,9 +262,9 @@ export const importBoardFromText = (text: string): BoardImportResult => {
   // Create board with blank tile information
   const boardJson: BoardJson = normalizedRows.map((row, y) =>
     row.split('').map((char, x) => {
-      const isEmpty = !char || char === EMPTY_CELL;
+      const isEmpty = !char || char === '.' || char === ' ';
       const isBlank = !isEmpty && char === char.toLowerCase() && char !== char.toUpperCase();
-      const character = isEmpty ? EMPTY_CELL : char.toUpperCase();
+      const character = isEmpty ? ' ' : char.toUpperCase();
       
       return {
         isEmpty,

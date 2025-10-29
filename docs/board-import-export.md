@@ -28,9 +28,23 @@ The text file format consists of:
    - Each character represents a cell:
      - **Uppercase letter** (A-Z): Regular tile with that letter
      - **Lowercase letter** (a-z): Blank tile representing that letter
-     - **Space character**: Empty cell
+     - **Dot (.)**: Empty cell
 
-3. **Footer** (1 line):
+3. **Board Definition section** (optional, for documentation):
+   - `BOARD_DEF` header
+   - One line per row showing bonus square layout
+   - Bonus square notation:
+     - `.` = empty (no bonus)
+     - `D` = double word score
+     - `T` = triple word score
+     - `Q` = quadruple word score (Super Scrabble)
+     - `d` = double letter score
+     - `t` = triple letter score
+     - `q` = quadruple letter score (Super Scrabble)
+     - `X` = center star
+   - **Note**: This section is currently **ignored on import** (see custom-board-placement.md)
+
+4. **Footer** (1 line):
    - Separator: `---`
 
 ### Example File
@@ -40,22 +54,40 @@ SCRABBLE-SOLVER v1.0
 GAME: scrabble
 LOCALE: en-US
 SIZE: 15x15
+RACK: ABCDEFG
 ---
-               
-       CAT     
-       A       
-       R       
-               
-               
-               
-               
-               
-               
-               
-               
-               
-               
-               
+...............
+.......CAT.....
+.......A.......
+.......R.......
+...............
+...............
+...............
+...............
+...............
+...............
+...............
+...............
+...............
+...............
+...............
+---
+BOARD_DEF
+T..d...T...d..T
+.D...t...t...D.
+..D...d.d...D..
+d..D...d...D..d
+....D.....D....
+.t...t...t...t.
+..d...d.d...d..
+T..d...X...d..T
+..d...d.d...d..
+.t...t...t...t.
+....D.....D....
+d..D...d...D..d
+..D...d.d...D..
+.D...t...t...D.
+T..d...T...d..T
 ---
 ```
 
@@ -64,6 +96,8 @@ In this example:
 - The word "CAT" is placed horizontally
 - The word "CAR" is placed vertically
 - All tiles are regular tiles (not blanks)
+- The rack contains 7 tiles: A, B, C, D, E, F, G
+- The BOARD_DEF section shows the standard Scrabble bonus layout
 
 ### Example with Blank Tiles
 
@@ -72,16 +106,30 @@ SCRABBLE-SOLVER v1.0
 GAME: scrabble
 LOCALE: en-US
 SIZE: 5x5
+RACK: ABc
 ---
-     
- CaT 
-     
-     
-     
+.....
+.CaT.
+.....
+.....
+.....
 ---
 ```
 
-In this example, the middle 'a' is lowercase, indicating it's a blank tile being used as an 'A'.
+In this example:
+- The middle 'a' in "CaT" is lowercase, indicating it's a blank tile being used as an 'A'
+- The rack contains 'ABc' where lowercase 'c' is a blank tile representing 'C'
+
+## Example Files
+
+Example files for all supported games are available in the `/examples` directory:
+- `sample-board.txt` - Standard Scrabble example
+- `sample-board-with-blanks.txt` - Scrabble with blank tiles
+- `super-scrabble-example.txt` - Super Scrabble (21x21)
+- `scrabble-duel-example.txt` - Scrabble Duel (11x11)
+- `literaki-example.txt` - Literaki (Polish)
+- `kelimelik-example.txt` - Kelimelik (Turkish)
+- `letter-league-example.txt` - Letter League (27x19)
 
 ## Supported Games
 
